@@ -2,6 +2,10 @@ local player = game.Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local humRoot = char:WaitForChild("HumanoidRootPart")
 local gui = Instance.new("ScreenGui", player.PlayerGui)
+local userInputService = game:GetService("UserInputService")
+local virtualUser = game:GetService("VirtualUser")
+
+local autoClicking = false
 
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0, 300, 0, 100)
@@ -92,11 +96,11 @@ textButton.Text = "Auto Quest"
 textButton.Parent = frame
 
 -- สร้างปุ่ม Auto Click
-local autoClickButton = Instance.new("TextButton")
-autoClickButton.Size = UDim2.new(0, 200, 0, 50)
-autoClickButton.Position = UDim2.new(0, 10, 0, 130)
-autoClickButton.Text = "Auto Click"
-autoClickButton.Parent = frame
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 200, 0, 50)
+button.Position = UDim2.new(0, 10, 0, 130)
+button.Text = "Auto M1"
+button.Parent = frame
 
 local running = false -- ตัวแปรสถานะการทำงาน
 local autoClickRunning = false -- ตัวแปรสถานะ Auto Click
@@ -120,42 +124,33 @@ textButton.MouseButton1Click:Connect(function()
         end
     end
 end)
+-- สร้างปุ่ม
+
 
 -- ฟังก์ชัน Auto Click
 local function autoClick()
-    while autoClickRunning do
-        if clickIndicator then
-            local inputService = game:GetService("UserInputService")
-            inputService.InputBegan:Fire({Position = clickIndicator.Position}) -- จำลองการคลิกที่จุด O
+    while autoClicking do
+        if userInputService.TouchEnabled then
+            -- รองรับ Mobile (แตะหน้าจอ)
+            virtualUser:Button1Down(Vector2.new(0, 0)) 
+            task.wait(0.05)
+            virtualUser:Button1Up(Vector2.new(0, 0))
+        else
+            -- รองรับ PC (คลิกเมาส์)
+            userInputService.InputBegan:Fire(Enum.UserInputType.MouseButton1, false)
         end
-        wait(0.5) -- ปรับเวลาคลิกอัตโนมัติ
+        task.wait(0.1) -- ปรับความเร็วคลิก (ค่าต่ำลง = เร็วขึ้น)
     end
 end
 
--- เมื่อกดปุ่ม Auto Click
-autoClickButton.MouseButton1Click:Connect(function()
-    if autoClickRunning then
-        autoClickRunning = false
-        autoClickButton.Text = "Auto Click"
-        if clickIndicator then
-            clickIndicator:Destroy()
-            clickIndicator = nil
-        end
+-- เมื่อกดปุ่มให้สลับสถานะ Auto Click
+button.MouseButton1Click:Connect(function()
+    autoClicking = not autoClicking
+
+    if autoClicking then
+        button.Text = "Stop / Auto M1"
+        autoClick()
     else
-        autoClickRunning = true
-        autoClickButton.Text = "Stop Auto Click"
-        
-        -- สร้างจุด O กลางหน้าจอ
-        clickIndicator = Instance.new("TextLabel")
-        clickIndicator.Size = UDim2.new(0, 50, 0, 50)
-        clickIndicator.Position = UDim2.new(0.5, -25, 0.5, -25)
-        clickIndicator.BackgroundTransparency = 1
-        clickIndicator.Text = "O"
-        clickIndicator.TextSize = 50
-        clickIndicator.TextColor3 = Color3.fromRGB(255, 0, 0)
-        clickIndicator.Parent = screenGui
-        
-        -- เริ่มคลิกอัตโนมัติ
-        spawn(autoClick)
+        button.Text = "Start / Auto M1"
     end
 end)
